@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI Study Assistant — Study Smarter with AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet" />
+<style>
+/* ── RESET & BASE ──────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  /* dark palette */
+  --bg:          #08090d;
+  --bg-2:        #0d0f17;
+  --bg-glass:    rgba(255,255,255,.04);
+  --bg-glass-b:  rgba(255,255,255,.08);
+  --border:      rgba(255,255,255,.08);
+  --border-h:    rgba(138,99,255,.5);
+  --txt:         #e8eaf0;
+  --txt-2:       #8b90a7;
+  --accent-1:    #7c3aed;
+  --accent-2:    #3b82f6;
+  --accent-3:    #06b6d4;
+  --neon:        #a78bfa;
+  --glow:        rgba(124,58,237,.35);
+  --glow-b:      rgba(59,130,246,.25);
+  --radius:      16px;
+  --radius-lg:   28px;
+  --transition:  .35s cubic-bezier(.4,0,.2,1);
+}
+[data-theme="light"] {
+  --bg:          #f4f5fb;
+  --bg-2:        #ffffff;
+  --bg-glass:    rgba(255,255,255,.65);
+  --bg-glass-b:  rgba(255,255,255,.85);
+  --border:      rgba(0,0,0,.08);
+  --border-h:    rgba(124,58,237,.4);
+  --txt:         #111827;
+  --txt-2:       #6b7280;
+  --glow:        rgba(124,58,237,.18);
+  --glow-b:      rgba(59,130,246,.15);
+}
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--txt);
+  line-height: 1.6;
+  overflow-x: hidden;
+  transition: background var(--transition), color var(--transition);
+}
+h1,h2,h3,h4 { font-family: 'Syne', sans-serif; line-height: 1.15; }
+a { text-decoration: none; color: inherit; }
+img { max-width: 100%; }
+section { padding: 100px 0; }
+
+/* ── SCROLLBAR ─────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--accent-1); border-radius: 99px; }
+
+/* ── CONTAINER ─────────────────────────────────────────────────────────── */
+.container { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+
+/* ── NAV ───────────────────────────────────────────────────────────────── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+  padding: 0 40px;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 68px;
+  background: rgba(8,9,13,.6);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  transition: all var(--transition);
+}
+nav.scrolled { background: rgba(8,9,13,.92); box-shadow: 0 4px 40px rgba(0,0,0,.4); }
+[data-theme="light"] nav { background: rgba(244,245,251,.7); }
+[data-theme="light"] nav.scrolled { background: rgba(244,245,251,.95); }
+.nav-logo {
+  font-family: 'Syne', sans-serif; font-size: 1.3rem; font-weight: 800;
+  background: linear-gradient(135deg, var(--accent-1), var(--accent-3));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  letter-spacing: -.5px;
+}
+.nav-links { display: flex; gap: 36px; align-items: center; }
+.nav-links a { font-size: .9rem; color: var(--txt-2); font-weight: 500; transition: color var(--transition); }
+.nav-links a:hover { color: var(--neon); }
+.nav-actions { display: flex; gap: 12px; align-items: center; }
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 22px; border-radius: 99px; font-size: .9rem; font-weight: 600; cursor: pointer; transition: all var(--transition); border: none; font-family: 'DM Sans', sans-serif; }
+.btn-ghost { background: var(--bg-glass); border: 1px solid var(--border); color: var(--txt); }
+.btn-ghost:hover { border-color: var(--border-h); background: var(--bg-glass-b); }
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+  color: #fff;
+  box-shadow: 0 4px 20px var(--glow);
+}
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 30px var(--glow), 0 0 60px var(--glow); }
+.btn-outline { background: transparent; border: 1px solid var(--border-h); color: var(--neon); }
+.btn-outline:hover { background: rgba(124,58,237,.12); transform: translateY(-2px); }
+
+/* theme toggle */
+#theme-toggle {
+  width: 40px; height: 40px; border-radius: 50%; cursor: pointer;
+  background: var(--bg-glass); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem; transition: all var(--transition);
+  color: var(--txt-2);
+}
+#theme-toggle:hover { border-color: var(--border-h); color: var(--neon); }
+
+/* hamburger */
+.hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; padding: 4px; }
+.hamburger span { display: block; width: 24px; height: 2px; background: var(--txt); border-radius: 2px; transition: all var(--transition); }
+.hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.hamburger.open span:nth-child(2) { opacity: 0; }
+.hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+/* mobile menu */
+.mobile-menu {
+  position: fixed; top: 68px; left: 0; right: 0; z-index: 999;
+  background: var(--bg-2); border-bottom: 1px solid var(--border);
+  padding: 24px;
+  display: none; flex-direction: column; gap: 16px;
+  transform: translateY(-10px); opacity: 0;
+  transition: all var(--transition);
+}
+.mobile-menu.open { display: flex; transform: translateY(0); opacity: 1; }
+.mobile-menu a { font-size: 1rem; color: var(--txt-2); font-weight: 500; padding: 8px 0; border-bottom: 1px solid var(--border); }
+
+/* ── HERO ──────────────────────────────────────────────────────────────── */
+.hero {
+  min-height: 100vh;
+  display: flex; align-items: center;
+  position: relative; overflow: hidden;
+  padding-top: 68px;
+}
+.hero-bg {
+  position: absolute; inset: 0; z-index: 0;
+  background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(124,58,237,.35) 0%, transparent 70%),
+              radial-gradient(ellipse 50% 40% at 80% 60%, rgba(59,130,246,.2) 0%, transparent 60%),
+              radial-gradient(ellipse 40% 30% at 10% 80%, rgba(6,182,212,.15) 0%, transparent 60%);
+}
+.hero-grid {
+  position: absolute; inset: 0;
+  background-image: linear-gradient(var(--border) 1px, transparent 1px),
+                    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 60px 60px;
+  opacity: .4;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 0%, transparent 75%);
+}
+.hero-inner {
+  position: relative; z-index: 1;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center;
+  width: 100%; max-width: 1180px; margin: 0 auto; padding: 0 24px;
+}
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--bg-glass); border: 1px solid var(--border-h);
+  padding: 6px 16px; border-radius: 99px; font-size: .8rem; color: var(--neon);
+  font-weight: 600; margin-bottom: 20px;
+  animation: fadeDown .6s ease both;
+}
+.hero-badge::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--neon); box-shadow: 0 0 8px var(--neon); animation: pulse 2s infinite; }
+.hero h1 {
+  font-size: clamp(2.6rem, 5vw, 4rem); font-weight: 800;
+  letter-spacing: -1.5px; margin-bottom: 20px;
+  animation: fadeDown .6s .1s ease both;
+}
+.hero h1 .grad {
+  background: linear-gradient(135deg, var(--accent-1) 0%, var(--accent-3) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.hero p { font-size: 1.1rem; color: var(--txt-2); max-width: 480px; margin-bottom: 36px; animation: fadeDown .6s .2s ease both; line-height: 1.7; }
+.hero-btns { display: flex; gap: 14px; flex-wrap: wrap; animation: fadeDown .6s .3s ease both; }
+.hero-btns .btn { font-size: 1rem; padding: 13px 28px; }
+.hero-stats { display: flex; gap: 32px; margin-top: 48px; animation: fadeDown .6s .4s ease both; }
+.hero-stat { display: flex; flex-direction: column; }
+.hero-stat strong { font-family: 'Syne', sans-serif; font-size: 1.8rem; font-weight: 800; background: linear-gradient(135deg, var(--accent-1), var(--accent-3)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.hero-stat span { font-size: .8rem; color: var(--txt-2); }
+
+/* hero visual */
+.hero-visual { position: relative; animation: fadeLeft .8s .2s ease both; }
+.ai-orb {
+  width: 380px; height: 380px; margin: 0 auto;
+  position: relative;
+}
+.orb-core {
+  position: absolute; inset: 40px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, var(--accent-1), var(--accent-2), var(--accent-3), var(--accent-1));
+  filter: blur(40px); opacity: .6;
+  animation: spin 8s linear infinite;
+}
+.orb-ring {
+  position: absolute; inset: 0;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  background: linear-gradient(var(--bg), var(--bg)) padding-box,
+              linear-gradient(135deg, var(--accent-1), var(--accent-3)) border-box;
+  animation: spin 12s linear infinite reverse;
+}
+.orb-ring::after {
+  content: '';
+  position: absolute; top: -4px; left: 50%;
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--neon); box-shadow: 0 0 16px var(--neon);
+}
+.orb-inner {
+  position: absolute; inset: 30px;
+  border-radius: 50%;
+  background: var(--bg-2);
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column; gap: 8px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.orb-inner::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(circle at 40% 30%, rgba(124,58,237,.25), transparent 60%);
+}
+.orb-icon { font-size: 3rem; animation: float 3s ease-in-out infinite; }
+.orb-label { font-family: 'Syne', sans-serif; font-size: .9rem; font-weight: 700; color: var(--neon); }
+.float-card {
+  position: absolute; background: var(--bg-glass); backdrop-filter: blur(16px);
+  border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px;
+  display: flex; align-items: center; gap: 10px; font-size: .8rem; font-weight: 500;
+  white-space: nowrap; box-shadow: 0 8px 32px rgba(0,0,0,.3);
+}
+.float-card-1 { top: 30px; left: -20px; animation: float 3.5s ease-in-out infinite; }
+.float-card-2 { bottom: 60px; right: -30px; animation: float 4s 1s ease-in-out infinite; }
+.float-card-3 { bottom: 20px; left: 0; animation: float 3.8s .5s ease-in-out infinite; }
+.float-card .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.dot-g { background: #22c55e; box-shadow: 0 0 8px #22c55e; }
+.dot-b { background: var(--accent-2); box-shadow: 0 0 8px var(--accent-2); }
+.dot-p { background: var(--neon); box-shadow: 0 0 8px var(--neon); }
+
+/* ── SECTION HEADER ────────────────────────────────────────────────────── */
+.section-tag {
+  display: inline-block; font-size: .75rem; font-weight: 700; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--neon);
+  background: rgba(167,139,250,.1); border: 1px solid rgba(167,139,250,.2);
+  padding: 4px 14px; border-radius: 99px; margin-bottom: 14px;
+}
+.section-title { font-size: clamp(1.8rem, 3.5vw, 2.7rem); font-weight: 800; letter-spacing: -.8px; margin-bottom: 14px; }
+.section-title .grad { background: linear-gradient(135deg, var(--accent-1), var(--accent-3)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.section-sub { font-size: 1rem; color: var(--txt-2); max-width: 540px; line-height: 1.7; }
+.section-header { text-align: center; margin-bottom: 64px; }
+.section-header .section-sub { margin: 0 auto; }
+
+/* ── FEATURES ──────────────────────────────────────────────────────────── */
+#features { background: var(--bg-2); position: relative; overflow: hidden; }
+#features::before {
+  content: ''; position: absolute; top: -200px; right: -200px;
+  width: 500px; height: 500px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(124,58,237,.15) 0%, transparent 70%);
+}
+.features-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
+.feat-card {
+  background: var(--bg-glass); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 36px;
+  position: relative; overflow: hidden;
+  cursor: default;
+  transition: all var(--transition);
+}
+.feat-card::before {
+  content: ''; position: absolute; inset: 0; border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, rgba(124,58,237,.08), transparent);
+  opacity: 0; transition: opacity var(--transition);
+}
+.feat-card:hover { transform: translateY(-6px); border-color: var(--border-h); box-shadow: 0 20px 60px var(--glow); }
+.feat-card:hover::before { opacity: 1; }
+.feat-icon {
+  width: 56px; height: 56px; border-radius: 14px; margin-bottom: 20px;
+  display: flex; align-items: center; justify-content: center; font-size: 1.6rem;
+  position: relative;
+}
+.feat-icon-1 { background: rgba(124,58,237,.15); }
+.feat-icon-2 { background: rgba(59,130,246,.15); }
+.feat-icon-3 { background: rgba(6,182,212,.15); }
+.feat-icon-4 { background: rgba(245,158,11,.15); }
+.feat-card h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: 10px; }
+.feat-card p { font-size: .9rem; color: var(--txt-2); line-height: 1.7; }
+.feat-number {
+  position: absolute; top: 24px; right: 24px;
+  font-family: 'Syne', sans-serif; font-size: 3.5rem; font-weight: 800;
+  color: var(--border); line-height: 1; user-select: none;
+  transition: color var(--transition);
+}
+.feat-card:hover .feat-number { color: rgba(124,58,237,.12); }
+
+/* ── HOW IT WORKS ──────────────────────────────────────────────────────── */
+#how-it-works { position: relative; }
+.steps-wrap { position: relative; }
+.steps-line {
+  position: absolute; top: 36px; left: calc(16.66% + 12px); right: calc(16.66% + 12px);
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent-1), var(--accent-2), var(--accent-3));
+  opacity: .3;
+}
+.steps-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; position: relative; z-index: 1; }
+.step-card { text-align: center; padding: 20px; }
+.step-num {
+  width: 72px; height: 72px; border-radius: 50%; margin: 0 auto 24px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg-2); border: 2px solid var(--accent-1);
+  font-family: 'Syne', sans-serif; font-size: 1.4rem; font-weight: 800;
+  color: var(--neon); position: relative;
+  box-shadow: 0 0 30px var(--glow);
+  transition: all var(--transition);
+}
+.step-card:hover .step-num { background: var(--accent-1); color: #fff; box-shadow: 0 0 50px var(--glow); transform: scale(1.1); }
+.step-icon { font-size: 1.8rem; margin-bottom: 18px; }
+.step-card h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 10px; }
+.step-card p { font-size: .9rem; color: var(--txt-2); line-height: 1.7; }
+
+/* ── BENEFITS ──────────────────────────────────────────────────────────── */
+#benefits { background: var(--bg-2); }
+.benefits-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
+.benefits-visual {
+  position: relative; background: var(--bg-glass); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 40px; overflow: hidden;
+}
+.benefits-visual::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(circle at 30% 30%, rgba(124,58,237,.2), transparent 60%);
+}
+.benefit-bar { margin-bottom: 20px; position: relative; }
+.benefit-bar:last-child { margin-bottom: 0; }
+.bar-head { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: .85rem; }
+.bar-head span:first-child { font-weight: 600; }
+.bar-head span:last-child { color: var(--neon); font-weight: 700; }
+.bar-track { height: 8px; background: var(--border); border-radius: 99px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--accent-1), var(--accent-3)); transition: width 1.5s cubic-bezier(.4,0,.2,1); }
+.benefit-list { list-style: none; display: flex; flex-direction: column; gap: 20px; }
+.benefit-item {
+  display: flex; align-items: flex-start; gap: 16px;
+  padding: 20px; border-radius: var(--radius);
+  background: var(--bg-glass); border: 1px solid var(--border);
+  transition: all var(--transition);
+}
+.benefit-item:hover { border-color: var(--border-h); transform: translateX(6px); }
+.benefit-ico { font-size: 1.5rem; flex-shrink: 0; margin-top: 2px; }
+.benefit-item h4 { font-size: 1rem; font-weight: 700; margin-bottom: 4px; }
+.benefit-item p { font-size: .85rem; color: var(--txt-2); line-height: 1.6; }
+
+/* ── TESTIMONIALS ──────────────────────────────────────────────────────── */
+.testimonials-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+.testi-card {
+  background: var(--bg-glass); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 32px;
+  position: relative; overflow: hidden;
+  transition: all var(--transition);
+}
+.testi-card::after {
+  content: '"'; position: absolute; top: 10px; right: 24px;
+  font-family: 'Syne', sans-serif; font-size: 7rem; font-weight: 800;
+  color: var(--border); line-height: 1;
+}
+.testi-card:hover { transform: translateY(-8px); border-color: var(--border-h); box-shadow: 0 24px 60px var(--glow); }
+.testi-stars { display: flex; gap: 4px; margin-bottom: 18px; font-size: 1rem; }
+.testi-text { font-size: .95rem; color: var(--txt-2); line-height: 1.75; margin-bottom: 24px; font-style: italic; }
+.testi-author { display: flex; align-items: center; gap: 12px; }
+.testi-avatar {
+  width: 42px; height: 42px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem; flex-shrink: 0;
+}
+.av-1 { background: rgba(124,58,237,.2); }
+.av-2 { background: rgba(59,130,246,.2); }
+.av-3 { background: rgba(6,182,212,.2); }
+.testi-name { font-weight: 700; font-size: .9rem; }
+.testi-role { font-size: .78rem; color: var(--txt-2); }
+
+/* ── CTA ───────────────────────────────────────────────────────────────── */
+#cta {
+  position: relative; overflow: hidden;
+  background: var(--bg-2);
+  padding: 120px 0;
+}
+.cta-bg {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 70% 80% at 50% 50%, rgba(124,58,237,.25), transparent 70%),
+              radial-gradient(ellipse 40% 40% at 80% 20%, rgba(59,130,246,.15), transparent 60%);
+}
+.cta-inner { position: relative; z-index: 1; text-align: center; max-width: 680px; margin: 0 auto; }
+.cta-inner h2 { font-size: clamp(2rem, 4vw, 3rem); font-weight: 800; letter-spacing: -1px; margin-bottom: 18px; }
+.cta-inner p { font-size: 1rem; color: var(--txt-2); margin-bottom: 40px; line-height: 1.7; }
+.btn-glow {
+  background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+  color: #fff; font-size: 1.05rem; padding: 15px 36px;
+  box-shadow: 0 0 40px var(--glow), 0 8px 30px var(--glow);
+  animation: glow-pulse 2.5s ease-in-out infinite;
+}
+.btn-glow:hover { transform: translateY(-3px); box-shadow: 0 0 70px var(--glow), 0 12px 40px var(--glow); }
+.cta-trust { display: flex; justify-content: center; gap: 32px; margin-top: 48px; flex-wrap: wrap; }
+.trust-item { display: flex; align-items: center; gap: 8px; font-size: .85rem; color: var(--txt-2); }
+.trust-item svg { color: var(--neon); }
+
+/* ── FOOTER ────────────────────────────────────────────────────────────── */
+footer {
+  background: var(--bg); border-top: 1px solid var(--border);
+  padding: 64px 0 28px;
+}
+.footer-grid { display: grid; grid-template-columns: 1.5fr repeat(3, 1fr); gap: 48px; margin-bottom: 48px; }
+.footer-brand p { font-size: .88rem; color: var(--txt-2); margin-top: 12px; line-height: 1.7; max-width: 240px; }
+.footer-col h4 { font-size: .9rem; font-weight: 700; margin-bottom: 18px; letter-spacing: .3px; }
+.footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.footer-col ul li a { font-size: .87rem; color: var(--txt-2); transition: color var(--transition); }
+.footer-col ul li a:hover { color: var(--neon); }
+.social-links { display: flex; gap: 10px; margin-top: 20px; }
+.social-btn {
+  width: 38px; height: 38px; border-radius: 10px;
+  background: var(--bg-glass); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center; font-size: 1rem;
+  cursor: pointer; transition: all var(--transition); color: var(--txt-2); text-decoration: none;
+}
+.social-btn:hover { border-color: var(--border-h); color: var(--neon); transform: translateY(-3px); }
+.footer-bottom {
+  border-top: 1px solid var(--border); padding-top: 24px;
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: .82rem; color: var(--txt-2);
+}
+
+/* ── CHATBOT ───────────────────────────────────────────────────────────── */
+#chatbot-btn {
+  position: fixed; bottom: 28px; right: 28px; z-index: 900;
+  width: 58px; height: 58px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+  border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: 1.4rem; color: #fff;
+  box-shadow: 0 8px 30px var(--glow);
+  animation: float 3s ease-in-out infinite;
+  transition: all var(--transition);
+}
+#chatbot-btn:hover { transform: scale(1.1); box-shadow: 0 12px 40px var(--glow); animation: none; }
+.chatbot-badge {
+  position: absolute; top: -4px; right: -4px;
+  width: 18px; height: 18px; border-radius: 50%; background: #22c55e;
+  border: 2px solid var(--bg); font-size: .6rem; color: #fff;
+  display: flex; align-items: center; justify-content: center; font-weight: 700;
+  animation: pulse 2s infinite;
+}
+
+/* chat popup */
+#chat-popup {
+  position: fixed; bottom: 100px; right: 28px; z-index: 901;
+  width: 320px; background: var(--bg-2); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); overflow: hidden;
+  box-shadow: 0 24px 80px rgba(0,0,0,.4);
+  transform: scale(.9) translateY(10px); opacity: 0; pointer-events: none;
+  transition: all var(--transition);
+}
+#chat-popup.open { transform: scale(1) translateY(0); opacity: 1; pointer-events: all; }
+.chat-header {
+  padding: 18px 20px; display: flex; align-items: center; gap: 12px;
+  background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+}
+.chat-header-ico { font-size: 1.4rem; }
+.chat-header h4 { font-size: .95rem; font-weight: 700; color: #fff; }
+.chat-header p { font-size: .75rem; color: rgba(255,255,255,.75); }
+.chat-body { padding: 20px; display: flex; flex-direction: column; gap: 12px; min-height: 160px; }
+.chat-bubble { padding: 12px 16px; border-radius: 14px; font-size: .85rem; line-height: 1.5; max-width: 85%; }
+.chat-bubble.ai { background: var(--bg-glass); border: 1px solid var(--border); align-self: flex-start; }
+.chat-bubble.user { background: linear-gradient(135deg, var(--accent-1), var(--accent-2)); color: #fff; align-self: flex-end; }
+.chat-input-wrap { padding: 14px 16px; border-top: 1px solid var(--border); display: flex; gap: 10px; }
+.chat-input-wrap input { flex: 1; background: var(--bg-glass); border: 1px solid var(--border); border-radius: 99px; padding: 8px 14px; font-size: .85rem; color: var(--txt); font-family: 'DM Sans', sans-serif; outline: none; }
+.chat-input-wrap input:focus { border-color: var(--border-h); }
+.chat-send { width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-1), var(--accent-2)); border: none; cursor: pointer; color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: transform var(--transition); }
+.chat-send:hover { transform: scale(1.1); }
+
+/* ── ANIMATIONS ────────────────────────────────────────────────────────── */
+@keyframes fadeDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeLeft { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 currentColor; } 50% { box-shadow: 0 0 0 8px transparent; } }
+@keyframes glow-pulse {
+  0%,100% { box-shadow: 0 0 40px var(--glow), 0 8px 30px var(--glow); }
+  50% { box-shadow: 0 0 70px var(--glow), 0 12px 50px var(--glow), 0 0 100px rgba(124,58,237,.3); }
+}
+
+/* scroll-reveal */
+.reveal { opacity: 0; transform: translateY(24px); transition: opacity .7s ease, transform .7s ease; }
+.reveal.visible { opacity: 1; transform: translateY(0); }
+.reveal-left { opacity: 0; transform: translateX(-24px); transition: opacity .7s ease, transform .7s ease; }
+.reveal-left.visible { opacity: 1; transform: translateX(0); }
+.reveal-right { opacity: 0; transform: translateX(24px); transition: opacity .7s ease, transform .7s ease; }
+.reveal-right.visible { opacity: 1; transform: translateX(0); }
+
+/* stagger */
+.stagger-1 { transition-delay: .1s; }
+.stagger-2 { transition-delay: .2s; }
+.stagger-3 { transition-delay: .3s; }
+.stagger-4 { transition-delay: .4s; }
+
+/* ── RESPONSIVE ────────────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .features-grid { grid-template-columns: repeat(2, 1fr); }
+  .footer-grid { grid-template-columns: 1fr 1fr; gap: 36px; }
+}
+@media (max-width: 820px) {
+  .hero-inner { grid-template-columns: 1fr; text-align: center; }
+  .hero p { margin: 0 auto 36px; }
+  .hero-btns { justify-content: center; }
+  .hero-stats { justify-content: center; }
+  .hero-visual { display: none; }
+  .benefits-wrap { grid-template-columns: 1fr; }
+  .testimonials-grid { grid-template-columns: 1fr; }
+  .steps-line { display: none; }
+  .steps-grid { grid-template-columns: 1fr; }
+  .nav-links, .nav-actions { display: none; }
+  .hamburger { display: flex; }
+}
+@media (max-width: 600px) {
+  section { padding: 72px 0; }
+  .features-grid { grid-template-columns: 1fr; }
+  .footer-grid { grid-template-columns: 1fr; }
+  .footer-bottom { flex-direction: column; gap: 10px; text-align: center; }
+  #chat-popup { right: 16px; left: 16px; width: auto; }
+  .hero-stats { flex-wrap: wrap; gap: 20px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── NAVBAR ──────────────────────────────────────────────────────────── -->
+<nav id="navbar">
+  <div class="nav-logo">⚡ StudyAI</div>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#how-it-works">How It Works</a>
+    <a href="#benefits">Benefits</a>
+    <a href="#testimonials">Reviews</a>
+  </div>
+  <div class="nav-actions">
+    <button id="theme-toggle" title="Toggle theme">🌙</button>
+    <a href="#cta" class="btn btn-ghost">Log In</a>
+    <a href="#cta" class="btn btn-primary">Get Started</a>
+  </div>
+  <div class="hamburger" id="hamburger">
+    <span></span><span></span><span></span>
+  </div>
+</nav>
+
+<!-- mobile menu -->
+<div class="mobile-menu" id="mobile-menu">
+  <a href="#features" class="mobile-link">Features</a>
+  <a href="#how-it-works" class="mobile-link">How It Works</a>
+  <a href="#benefits" class="mobile-link">Benefits</a>
+  <a href="#testimonials" class="mobile-link">Reviews</a>
+  <a href="#cta" class="btn btn-primary" style="width:fit-content;margin-top:8px">Get Started</a>
+</div>
+
+<!-- ── HERO ─────────────────────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-grid"></div>
+  <div class="hero-inner">
+    <div class="hero-content">
+      <div class="hero-badge">✨ Powered by Advanced AI</div>
+      <h1>Study Smarter<br>with <span class="grad">AI</span></h1>
+      <p>Your personal AI-powered learning companion that helps you understand complex topics, generate notes, and prepare for exams — faster than ever before.</p>
+      <div class="hero-btns">
+        <a href="#cta" class="btn btn-primary">🚀 Start Learning</a>
+        <a href="#how-it-works" class="btn btn-outline">▶ Try Demo</a>
+      </div>
+      <div class="hero-stats">
+        <div class="hero-stat"><strong>50K+</strong><span>Active Students</span></div>
+        <div class="hero-stat"><strong>98%</strong><span>Satisfaction Rate</span></div>
+        <div class="hero-stat"><strong>3×</strong><span>Faster Learning</span></div>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="ai-orb">
+        <div class="orb-core"></div>
+        <div class="orb-ring"></div>
+        <div class="orb-inner">
+          <div class="orb-icon">🧠</div>
+          <div class="orb-label">AI Engine</div>
+        </div>
+      </div>
+      <div class="float-card float-card-1">
+        <div class="dot dot-g"></div>
+        <span>AI processing notes…</span>
+      </div>
+      <div class="float-card float-card-2">
+        <div class="dot dot-b"></div>
+        <span>Quiz generated ✓</span>
+      </div>
+      <div class="float-card float-card-3">
+        <div class="dot dot-p"></div>
+        <span>Study plan ready!</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FEATURES ─────────────────────────────────────────────────────────── -->
+<section id="features">
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="section-tag">Features</div>
+      <h2 class="section-title">Everything You Need to <span class="grad">Ace Your Studies</span></h2>
+      <p class="section-sub">Powerful AI tools built specifically for students who want to learn smarter, not harder.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feat-card reveal stagger-1">
+        <div class="feat-number">01</div>
+        <div class="feat-icon feat-icon-1">📝</div>
+        <h3>Smart Notes Generator</h3>
+        <p>Upload your study material and get instant, beautifully structured summaries powered by advanced AI. Never struggle with long textbooks again.</p>
+      </div>
+      <div class="feat-card reveal stagger-2">
+        <div class="feat-number">02</div>
+        <div class="feat-icon feat-icon-2">🤖</div>
+        <h3>AI Tutor</h3>
+        <p>Ask any question and get crystal-clear, step-by-step explanations just like having a personal tutor available 24/7, for any subject.</p>
+      </div>
+      <div class="feat-card reveal stagger-3">
+        <div class="feat-number">03</div>
+        <div class="feat-icon feat-icon-3">🎯</div>
+        <h3>Quiz Generator</h3>
+        <p>Automatically generate targeted quizzes from your study material to test your knowledge and identify weak areas before the exam.</p>
+      </div>
+      <div class="feat-card reveal stagger-4">
+        <div class="feat-number">04</div>
+        <div class="feat-icon feat-icon-4">📈</div>
+        <h3>Personalized Learning</h3>
+        <p>AI analyzes your performance, learning pace, and style to create custom study plans that maximize retention and minimize time.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── HOW IT WORKS ──────────────────────────────────────────────────────── -->
+<section id="how-it-works">
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="section-tag">Process</div>
+      <h2 class="section-title">Get Started in <span class="grad">3 Simple Steps</span></h2>
+      <p class="section-sub">From upload to understanding in minutes. No complicated setup required.</p>
+    </div>
+    <div class="steps-wrap">
+      <div class="steps-line"></div>
+      <div class="steps-grid">
+        <div class="step-card reveal stagger-1">
+          <div class="step-num">1</div>
+          <div class="step-icon">📤</div>
+          <h3>Upload Your Material</h3>
+          <p>Drop your PDFs, notes, or paste your study text. We support all major file formats for seamless import.</p>
+        </div>
+        <div class="step-card reveal stagger-2">
+          <div class="step-num">2</div>
+          <div class="step-icon">⚙️</div>
+          <h3>AI Analyzes Content</h3>
+          <p>Our powerful AI reads, understands, and processes your material — extracting key concepts and insights instantly.</p>
+        </div>
+        <div class="step-card reveal stagger-3">
+          <div class="step-num">3</div>
+          <div class="step-icon">🎉</div>
+          <h3>Learn & Succeed</h3>
+          <p>Get summaries, explanations, quizzes, and a personalized study plan — everything you need to ace the exam.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── BENEFITS ──────────────────────────────────────────────────────────── -->
+<section id="benefits">
+  <div class="container">
+    <div class="benefits-wrap">
+      <div class="reveal-left">
+        <div class="section-tag">Benefits</div>
+        <h2 class="section-title">Why Students <span class="grad">Love StudyAI</span></h2>
+        <p class="section-sub" style="margin-bottom:36px">Built for the modern student who needs to learn more in less time without sacrificing understanding.</p>
+        <ul class="benefit-list">
+          <li class="benefit-item">
+            <div class="benefit-ico">⏱️</div>
+            <div><h4>Save Time While Studying</h4><p>Cut your study time by up to 60% with AI-generated summaries and focused content.</p></div>
+          </li>
+          <li class="benefit-item">
+            <div class="benefit-ico">🏆</div>
+            <div><h4>Improve Exam Preparation</h4><p>AI-powered quizzes and targeted revision make exam prep more effective and less stressful.</p></div>
+          </li>
+          <li class="benefit-item">
+            <div class="benefit-ico">💡</div>
+            <div><h4>Understand Complex Topics Easily</h4><p>Get simplified explanations of even the most difficult concepts in your own language.</p></div>
+          </li>
+          <li class="benefit-item">
+            <div class="benefit-ico">🚀</div>
+            <div><h4>Boost Productivity</h4><p>Smart scheduling and AI recommendations keep you focused and on track every study session.</p></div>
+          </li>
+        </ul>
+      </div>
+      <div class="reveal-right">
+        <div class="benefits-visual">
+          <h3 style="font-size:1.1rem;margin-bottom:28px;font-weight:700">Student Performance Metrics</h3>
+          <div class="benefit-bar">
+            <div class="bar-head"><span>Study Efficiency</span><span>94%</span></div>
+            <div class="bar-track"><div class="bar-fill" data-width="94" style="width:0%"></div></div>
+          </div>
+          <div class="benefit-bar">
+            <div class="bar-head"><span>Exam Scores Improved</span><span>87%</span></div>
+            <div class="bar-track"><div class="bar-fill" data-width="87" style="width:0%"></div></div>
+          </div>
+          <div class="benefit-bar">
+            <div class="bar-head"><span>Concept Retention</span><span>91%</span></div>
+            <div class="bar-track"><div class="bar-fill" data-width="91" style="width:0%"></div></div>
+          </div>
+          <div class="benefit-bar">
+            <div class="bar-head"><span>Time Saved</span><span>60%</span></div>
+            <div class="bar-track"><div class="bar-fill" data-width="60" style="width:0%"></div></div>
+          </div>
+          <div style="margin-top:32px;padding-top:24px;border-top:1px solid var(--border);display:flex;gap:24px">
+            <div><div style="font-family:'Syne',sans-serif;font-size:2rem;font-weight:800;background:linear-gradient(135deg,var(--accent-1),var(--accent-3));-webkit-background-clip:text;-webkit-text-fill-color:transparent">50K+</div><div style="font-size:.8rem;color:var(--txt-2)">Students Enrolled</div></div>
+            <div><div style="font-family:'Syne',sans-serif;font-size:2rem;font-weight:800;background:linear-gradient(135deg,var(--accent-1),var(--accent-3));-webkit-background-clip:text;-webkit-text-fill-color:transparent">4.9★</div><div style="font-size:.8rem;color:var(--txt-2)">Average Rating</div></div>
+            <div><div style="font-family:'Syne',sans-serif;font-size:2rem;font-weight:800;background:linear-gradient(135deg,var(--accent-1),var(--accent-3));-webkit-background-clip:text;-webkit-text-fill-color:transparent">3×</div><div style="font-size:.8rem;color:var(--txt-2)">Faster Results</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── TESTIMONIALS ──────────────────────────────────────────────────────── -->
+<section id="testimonials">
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="section-tag">Testimonials</div>
+      <h2 class="section-title">What Students <span class="grad">Are Saying</span></h2>
+      <p class="section-sub">Join thousands of students who transformed their learning with StudyAI.</p>
+    </div>
+    <div class="testimonials-grid">
+      <div class="testi-card reveal stagger-1">
+        <div class="testi-stars">⭐⭐⭐⭐⭐</div>
+        <p class="testi-text">"This AI tool helped me revise my entire syllabus in half the time. The smart summaries are incredibly accurate and easy to understand. I went from barely passing to top of my class!"</p>
+        <div class="testi-author">
+          <div class="testi-avatar av-1">👩‍🎓</div>
+          <div><div class="testi-name">Priya Sharma</div><div class="testi-role">Medical Student, AIIMS</div></div>
+        </div>
+      </div>
+      <div class="testi-card reveal stagger-2">
+        <div class="testi-stars">⭐⭐⭐⭐⭐</div>
+        <p class="testi-text">"The quiz generator makes exam preparation so easy and actually fun. It identifies exactly where my weak spots are and helps me focus. My exam scores jumped by 30% in one semester."</p>
+        <div class="testi-author">
+          <div class="testi-avatar av-2">👨‍💻</div>
+          <div><div class="testi-name">Rahul Verma</div><div class="testi-role">Computer Science, IIT Delhi</div></div>
+        </div>
+      </div>
+      <div class="testi-card reveal stagger-3">
+        <div class="testi-stars">⭐⭐⭐⭐⭐</div>
+        <p class="testi-text">"Finally a study tool that actually helps me understand concepts, not just memorize them. The AI Tutor explains things so clearly — it's like having a professor on call 24/7. Absolutely worth it!"</p>
+        <div class="testi-author">
+          <div class="testi-avatar av-3">👩‍🔬</div>
+          <div><div class="testi-name">Sneha Patel</div><div class="testi-role">Engineering Student, NIT</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA ───────────────────────────────────────────────────────────────── -->
+<section id="cta">
+  <div class="cta-bg"></div>
+  <div class="container">
+    <div class="cta-inner reveal">
+      <div class="section-tag">Get Started Today</div>
+      <h2>Start Your Smart Learning<br><span class="grad">Journey Today</span></h2>
+      <p>Join thousands of students using AI Study Assistant to improve their learning experience. Free to start — no credit card required.</p>
+      <a href="#" class="btn btn-glow">🚀 Get Started Free</a>
+      <div class="cta-trust">
+        <div class="trust-item">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          Free forever plan available
+        </div>
+        <div class="trust-item">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          No credit card required
+        </div>
+        <div class="trust-item">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          Setup in under 2 minutes
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FOOTER ────────────────────────────────────────────────────────────── -->
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="nav-logo">⚡ StudyAI</div>
+        <p>Your personal AI-powered learning companion. Study smarter, not harder.</p>
+        <div class="social-links">
+          <a class="social-btn" href="#" title="Twitter">𝕏</a>
+          <a class="social-btn" href="#" title="LinkedIn">in</a>
+          <a class="social-btn" href="#" title="Instagram">📷</a>
+          <a class="social-btn" href="#" title="GitHub">⌥</a>
+        </div>
+      </div>
+      <div class="footer-col">
+        <h4>Product</h4>
+        <ul>
+          <li><a href="#features">Features</a></li>
+          <li><a href="#how-it-works">How It Works</a></li>
+          <li><a href="#">Pricing</a></li>
+          <li><a href="#">Changelog</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <ul>
+          <li><a href="#">About Us</a></li>
+          <li><a href="#">Blog</a></li>
+          <li><a href="#">Careers</a></li>
+          <li><a href="#">Contact</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Legal</h4>
+        <ul>
+          <li><a href="#">Privacy Policy</a></li>
+          <li><a href="#">Terms of Service</a></li>
+          <li><a href="#">Cookie Policy</a></li>
+          <li><a href="#">Support</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2025 StudyAI. All rights reserved.</span>
+      <span>Made with ❤️ for students everywhere</span>
+    </div>
+  </div>
+</footer>
+
+<!-- ── CHATBOT ────────────────────────────────────────────────────────────── -->
+<button id="chatbot-btn" onclick="toggleChat()">
+  🤖
+  <div class="chatbot-badge">1</div>
+</button>
+
+<div id="chat-popup">
+  <div class="chat-header">
+    <div class="chat-header-ico">🤖</div>
+    <div>
+      <h4>StudyAI Assistant</h4>
+      <p>Online • Ready to help</p>
+    </div>
+  </div>
+  <div class="chat-body" id="chat-body">
+    <div class="chat-bubble ai">👋 Hi there! I'm your AI Study Assistant. Ask me anything about your studies!</div>
+    <div class="chat-bubble user">How can you help me?</div>
+    <div class="chat-bubble ai">I can summarize notes, generate quizzes, explain concepts, and create personalized study plans. What subject are you studying? 📚</div>
+  </div>
+  <div class="chat-input-wrap">
+    <input type="text" placeholder="Ask me anything…" id="chat-input" onkeydown="handleChatKey(event)" />
+    <button class="chat-send" onclick="sendChat()">➤</button>
+  </div>
+</div>
+
+<!-- ── JS ────────────────────────────────────────────────────────────────── -->
+<script>
+/* ── THEME TOGGLE ─────────────────────────────────────────────── */
+const themeBtn = document.getElementById('theme-toggle');
+let dark = true;
+themeBtn.addEventListener('click', () => {
+  dark = !dark;
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  themeBtn.textContent = dark ? '🌙' : '☀️';
+});
+
+/* ── STICKY NAV ───────────────────────────────────────────────── */
+window.addEventListener('scroll', () => {
+  document.getElementById('navbar').classList.toggle('scrolled', scrollY > 40);
+});
+
+/* ── MOBILE MENU ──────────────────────────────────────────────── */
+const ham = document.getElementById('hamburger');
+const mMenu = document.getElementById('mobile-menu');
+ham.addEventListener('click', () => {
+  ham.classList.toggle('open');
+  mMenu.classList.toggle('open');
+});
+document.querySelectorAll('.mobile-link').forEach(l => l.addEventListener('click', () => {
+  ham.classList.remove('open'); mMenu.classList.remove('open');
+}));
+
+/* ── SCROLL REVEAL ────────────────────────────────────────────── */
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('visible');
+      // animate bars when benefits section enters view
+      if (e.target.closest('#benefits')) {
+        document.querySelectorAll('.bar-fill').forEach(bar => {
+          bar.style.width = bar.dataset.width + '%';
+        });
+      }
+    }
+  });
+}, { threshold: 0.12 });
+
+document.querySelectorAll('.reveal, .reveal-left, .reveal-right').forEach(el => observer.observe(el));
+
+/* ── CHATBOT ──────────────────────────────────────────────────── */
+let chatOpen = false;
+function toggleChat() {
+  chatOpen = !chatOpen;
+  document.getElementById('chat-popup').classList.toggle('open', chatOpen);
+  document.querySelector('.chatbot-badge').style.display = chatOpen ? 'none' : 'flex';
+}
+
+const replies = [
+  "Great question! I can generate a quick summary for that topic. Just upload your notes and I'll get started! 📝",
+  "I'd recommend breaking this into 3 study sessions. Want me to create a schedule? 🗓️",
+  "Here's a quick quiz on that topic to test your knowledge! 🎯",
+  "I can explain that concept step-by-step. Let me know which part you find confusing! 💡",
+  "Based on your progress, I suggest focusing on this area first for maximum exam impact. 🚀"
+];
+
+function sendChat() {
+  const input = document.getElementById('chat-input');
+  const body = document.getElementById('chat-body');
+  const text = input.value.trim();
+  if (!text) return;
+
+  const userBubble = document.createElement('div');
+  userBubble.className = 'chat-bubble user';
+  userBubble.textContent = text;
+  body.appendChild(userBubble);
+  input.value = '';
+  body.scrollTop = body.scrollHeight;
+
+  setTimeout(() => {
+    const aiBubble = document.createElement('div');
+    aiBubble.className = 'chat-bubble ai';
+    aiBubble.textContent = replies[Math.floor(Math.random() * replies.length)];
+    body.appendChild(aiBubble);
+    body.scrollTop = body.scrollHeight;
+  }, 800);
+}
+
+function handleChatKey(e) {
+  if (e.key === 'Enter') sendChat();
+}
+
+/* ── SMOOTH SECTION ENTRANCE ──────────────────────────────────── */
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    const target = document.querySelector(a.getAttribute('href'));
+    if (target) { e.preventDefault(); target.scrollIntoView({ behavior: 'smooth' }); }
+  });
+});
+</script>
+</body>
+</html>
