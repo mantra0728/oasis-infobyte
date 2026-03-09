@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ThermoFlow — Temperature Converter</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg1: #0a0a14;
+    --bg2: #0f0f1e;
+    --glass: rgba(255,255,255,0.04);
+    --glass-border: rgba(255,255,255,0.09);
+    --glass-hover: rgba(255,255,255,0.08);
+    --accent: #7c6aff;
+    --accent2: #ff6ab0;
+    --accent3: #6affd4;
+    --text-primary: #f0eeff;
+    --text-secondary: rgba(240,238,255,0.5);
+    --text-muted: rgba(240,238,255,0.25);
+    --card-shadow: 0 32px 80px rgba(0,0,0,0.6);
+    --glow: 0 0 40px rgba(124,106,255,0.25);
+    --error: #ff6a6a;
+    --radius: 24px;
+    --radius-sm: 14px;
+    --transition: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  [data-theme="light"] {
+    --bg1: #e8e4ff;
+    --bg2: #f0edff;
+    --glass: rgba(255,255,255,0.55);
+    --glass-border: rgba(124,106,255,0.2);
+    --glass-hover: rgba(255,255,255,0.75);
+    --text-primary: #1a1530;
+    --text-secondary: rgba(26,21,48,0.55);
+    --text-muted: rgba(26,21,48,0.3);
+    --card-shadow: 0 32px 80px rgba(124,106,255,0.18);
+    --glow: 0 0 40px rgba(124,106,255,0.15);
+    --error: #d63c3c;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    min-height: 100vh;
+    background: var(--bg1);
+    font-family: 'DM Sans', sans-serif;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    overflow-x: hidden;
+    position: relative;
+    transition: background var(--transition);
+  }
+
+  /* Animated background */
+  .bg-canvas {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.35;
+    animation: drift 18s ease-in-out infinite alternate;
+  }
+  .orb-1 { width: 600px; height: 600px; background: radial-gradient(circle, #7c6aff, transparent); top: -150px; left: -150px; animation-duration: 22s; }
+  .orb-2 { width: 500px; height: 500px; background: radial-gradient(circle, #ff6ab0, transparent); bottom: -100px; right: -100px; animation-duration: 18s; animation-delay: -6s; }
+  .orb-3 { width: 350px; height: 350px; background: radial-gradient(circle, #6affd4, transparent); top: 40%; left: 55%; animation-duration: 26s; animation-delay: -12s; }
+  [data-theme="light"] .orb { opacity: 0.22; }
+
+  @keyframes drift {
+    0% { transform: translate(0,0) scale(1); }
+    50% { transform: translate(40px, 30px) scale(1.05); }
+    100% { transform: translate(-20px, 50px) scale(0.95); }
+  }
+
+  /* Grid texture */
+  .bg-grid {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background-image: linear-gradient(rgba(124,106,255,0.04) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(124,106,255,0.04) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+    mask-image: radial-gradient(ellipse at 50% 50%, black 30%, transparent 80%);
+  }
+
+  /* Main layout */
+  .app {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 480px;
+  }
+
+  /* Theme toggle */
+  .theme-toggle {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 100;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(20px);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    transition: all var(--transition);
+    box-shadow: var(--card-shadow);
+  }
+  .theme-toggle:hover { background: var(--glass-hover); transform: scale(1.1) rotate(15deg); }
+
+  /* Card */
+  .card {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+    border-radius: var(--radius);
+    padding: 40px 36px;
+    box-shadow: var(--card-shadow), var(--glow), inset 0 1px 0 rgba(255,255,255,0.08);
+    transition: all var(--transition);
+  }
+
+  /* Header */
+  .header { text-align: center; margin-bottom: 36px; }
+  .app-label {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+    opacity: 0.85;
+  }
+  .app-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 32px;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent) 60%, var(--accent2) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.1;
+    margin-bottom: 4px;
+  }
+  .temp-icon {
+    font-size: 40px;
+    display: block;
+    margin: 0 auto 12px;
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    filter: drop-shadow(0 0 12px rgba(124,106,255,0.5));
+  }
+
+  /* Unit selector */
+  .section-label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+  }
+
+  .unit-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .unit-btn {
+    position: relative;
+    padding: 14px 8px;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition);
+    text-align: center;
+    overflow: hidden;
+  }
+  .unit-btn .unit-symbol {
+    display: block;
+    font-size: 20px;
+    font-weight: 800;
+    margin-bottom: 2px;
+    transition: all var(--transition);
+  }
+  .unit-btn .unit-name { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; }
+  .unit-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    opacity: 0;
+    transition: opacity var(--transition);
+    border-radius: inherit;
+  }
+  .unit-btn span { position: relative; z-index: 1; }
+  .unit-btn:hover { border-color: var(--accent); color: var(--text-primary); transform: translateY(-2px); }
+  .unit-btn.active { color: #fff; border-color: transparent; }
+  .unit-btn.active::before { opacity: 1; }
+
+  /* Input */
+  .input-wrap {
+    position: relative;
+    margin-bottom: 8px;
+  }
+  .temp-input {
+    width: 100%;
+    padding: 18px 20px;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    outline: none;
+    transition: all var(--transition);
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .temp-input::placeholder { color: var(--text-muted); font-weight: 400; font-size: 18px; }
+  .temp-input:focus { border-color: var(--accent); background: rgba(124,106,255,0.08); box-shadow: 0 0 0 3px rgba(124,106,255,0.15); }
+  .temp-input.error { border-color: var(--error) !important; box-shadow: 0 0 0 3px rgba(255,106,106,0.15) !important; }
+
+  .error-msg {
+    font-size: 12px;
+    color: var(--error);
+    margin-top: 6px;
+    padding-left: 4px;
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: all 0.25s ease;
+    height: 0;
+    overflow: hidden;
+  }
+  .error-msg.visible { opacity: 1; transform: translateY(0); height: 20px; }
+
+  /* Convert button */
+  .convert-btn {
+    width: 100%;
+    margin-top: 20px;
+    padding: 18px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none;
+    border-radius: var(--radius-sm);
+    color: #fff;
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: all var(--transition);
+    box-shadow: 0 8px 32px rgba(124,106,255,0.4);
+  }
+  .convert-btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255,255,255,0.25);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.5s ease, height 0.5s ease, opacity 0.5s ease;
+    opacity: 0;
+  }
+  .convert-btn:hover { transform: translateY(-3px); box-shadow: 0 16px 48px rgba(124,106,255,0.55); }
+  .convert-btn:active { transform: translateY(0); }
+  .convert-btn.pulse::before { width: 500px; height: 500px; opacity: 0; }
+
+  .btn-inner { display: flex; align-items: center; justify-content: center; gap: 10px; }
+  .btn-loader {
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: none;
+  }
+  .convert-btn.loading .btn-loader { display: block; }
+  .convert-btn.loading .btn-text { opacity: 0.7; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Result */
+  .result-area {
+    margin-top: 28px;
+    opacity: 0;
+    transform: translateY(16px);
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+  }
+  .result-area.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
+
+  .result-card {
+    background: linear-gradient(135deg, rgba(124,106,255,0.12), rgba(255,106,176,0.08));
+    border: 1px solid rgba(124,106,255,0.25);
+    border-radius: var(--radius-sm);
+    padding: 24px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .result-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  }
+  .result-label { font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 10px; }
+  .result-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 52px;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--text-primary), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+    margin-bottom: 4px;
+    letter-spacing: -1px;
+  }
+  .result-from { font-size: 13px; color: var(--text-secondary); margin-top: 6px; }
+  .result-all {
+    display: flex;
+    gap: 1px;
+    margin-top: 16px;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--glass-border);
+  }
+  .result-mini {
+    flex: 1;
+    padding: 10px 6px;
+    background: var(--glass);
+    text-align: center;
+    transition: background var(--transition);
+  }
+  .result-mini:hover { background: var(--glass-hover); }
+  .result-mini .mini-val { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; color: var(--text-primary); }
+  .result-mini .mini-unit { font-size: 10px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 2px; }
+
+  /* Thermometer bar */
+  .thermo-wrap { margin-top: 24px; }
+  .thermo-label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .thermo-label { font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-secondary); }
+  .thermo-val { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; color: var(--accent); }
+  .thermo-track {
+    height: 8px;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 999px;
+    overflow: hidden;
+    position: relative;
+  }
+  .thermo-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #6affd4, #7c6aff, #ff6ab0, #ff4a4a);
+    width: 0%;
+    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+  }
+  .thermo-fill::after {
+    content: '';
+    position: absolute;
+    right: 0; top: 0; bottom: 0;
+    width: 20px;
+    background: rgba(255,255,255,0.4);
+    filter: blur(4px);
+  }
+
+  /* Divider */
+  .divider {
+    height: 1px;
+    background: var(--glass-border);
+    margin: 28px 0;
+    position: relative;
+  }
+  .divider::before {
+    content: 'HISTORY';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--bg1);
+    padding: 0 12px;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--text-muted);
+    transition: background var(--transition);
+  }
+  [data-theme="light"] .divider::before { background: var(--bg2); }
+
+  /* History */
+  .history-list { display: flex; flex-direction: column; gap: 8px; }
+  .history-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    opacity: 0;
+    transform: translateX(-10px);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: slideIn 0.4s forwards;
+  }
+  @keyframes slideIn {
+    to { opacity: 1; transform: translateX(0); }
+  }
+  .history-item:hover { background: var(--glass-hover); }
+  .history-from { color: var(--text-secondary); }
+  .history-from strong { color: var(--text-primary); font-family: 'Syne', sans-serif; font-weight: 700; }
+  .history-arrow { color: var(--text-muted); margin: 0 8px; }
+  .history-to { color: var(--accent); font-family: 'Syne', sans-serif; font-weight: 700; }
+  .history-time { font-size: 10px; color: var(--text-muted); letter-spacing: 0.05em; }
+
+  .empty-history { text-align: center; padding: 20px; color: var(--text-muted); font-size: 13px; font-style: italic; }
+
+  /* Responsive */
+  @media (max-width: 500px) {
+    .card { padding: 28px 20px; }
+    .app-title { font-size: 26px; }
+    .result-value { font-size: 40px; }
+    .theme-toggle { top: 16px; right: 16px; }
+  }
+
+  /* Entrance animation */
+  .card {
+    animation: cardIn 0.7s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(30px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-canvas">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+</div>
+<div class="bg-grid"></div>
+
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">🌙</button>
+
+<div class="app">
+  <div class="card">
+
+    <!-- Header -->
+    <div class="header">
+      <span class="temp-icon" id="tempIcon">🌡️</span>
+      <div class="app-label">Precision Tool</div>
+      <h1 class="app-title">ThermoFlow</h1>
+    </div>
+
+    <!-- Unit selection -->
+    <div class="section-label">Convert from</div>
+    <div class="unit-grid" id="unitGrid">
+      <button class="unit-btn active" data-unit="C">
+        <span class="unit-symbol">°C</span>
+        <span class="unit-name">Celsius</span>
+      </button>
+      <button class="unit-btn" data-unit="F">
+        <span class="unit-symbol">°F</span>
+        <span class="unit-name">Fahrenheit</span>
+      </button>
+      <button class="unit-btn" data-unit="K">
+        <span class="unit-symbol">K</span>
+        <span class="unit-name">Kelvin</span>
+      </button>
+    </div>
+
+    <!-- Input -->
+    <div class="section-label">Temperature value</div>
+    <div class="input-wrap">
+      <input
+        type="number"
+        class="temp-input"
+        id="tempInput"
+        placeholder="Enter temperature"
+        autocomplete="off"
+        step="any"
+      />
+    </div>
+    <div class="error-msg" id="errorMsg">⚠ Please enter a valid number</div>
+
+    <!-- Convert button -->
+    <button class="convert-btn" id="convertBtn">
+      <div class="btn-inner">
+        <div class="btn-loader"></div>
+        <span class="btn-text">Convert Temperature</span>
+      </div>
+    </button>
+
+    <!-- Result area -->
+    <div class="result-area" id="resultArea">
+      <div class="result-card">
+        <div class="result-label">Primary Result</div>
+        <div class="result-value" id="resultValue">—</div>
+        <div class="result-from" id="resultFrom"></div>
+        <div class="result-all" id="resultAll"></div>
+      </div>
+
+      <!-- Thermometer bar -->
+      <div class="thermo-wrap">
+        <div class="thermo-label-row">
+          <span class="thermo-label">Heat Index</span>
+          <span class="thermo-val" id="thermoLabel">—</span>
+        </div>
+        <div class="thermo-track">
+          <div class="thermo-fill" id="thermoFill"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- History -->
+    <div class="divider"></div>
+    <div class="history-list" id="historyList">
+      <div class="empty-history">No conversions yet</div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // ─── State ────────────────────────────────────────────────────────────────
+  let selectedUnit = 'C';
+  let history = [];
+
+  // ─── DOM ──────────────────────────────────────────────────────────────────
+  const unitBtns   = document.querySelectorAll('.unit-btn');
+  const input      = document.getElementById('tempInput');
+  const errorMsg   = document.getElementById('errorMsg');
+  const convertBtn = document.getElementById('convertBtn');
+  const resultArea = document.getElementById('resultArea');
+  const resultValue = document.getElementById('resultValue');
+  const resultFrom  = document.getElementById('resultFrom');
+  const resultAll   = document.getElementById('resultAll');
+  const thermoFill  = document.getElementById('thermoFill');
+  thermoLabel = document.getElementById('thermoLabel');
+  const historyList = document.getElementById('historyList');
+  const themeToggle = document.getElementById('themeToggle');
+  const tempIcon    = document.getElementById('tempIcon');
+
+  // ─── Conversion functions ─────────────────────────────────────────────────
+  const convert = {
+    C: { F: v => v * 9/5 + 32,        K: v => v + 273.15 },
+    F: { C: v => (v - 32) * 5/9,      K: v => (v - 32) * 5/9 + 273.15 },
+    K: { C: v => v - 273.15,           F: v => (v - 273.15) * 9/5 + 32 },
+  };
+
+  function toAll(val, from) {
+    let results = {};
+    results[from] = val;
+    for (const to of ['C','F','K']) {
+      if (to !== from) results[to] = convert[from][to](val);
+    }
+    return results;
+  }
+
+  function fmt(n) {
+    return Number(n.toFixed(2)).toLocaleString('en-US', { maximumFractionDigits: 2 });
+  }
+
+  const unitLabel = { C: '°C', F: '°F', K: 'K' };
+  const unitName  = { C: 'Celsius', F: 'Fahrenheit', K: 'Kelvin' };
+
+  // ─── Temp icon & description ──────────────────────────────────────────────
+  function getTempMeta(celcius) {
+    if (celcius <= 0)   return { icon: '❄️', label: 'Freezing',    pct: 5  };
+    if (celcius <= 15)  return { icon: '🌬️', label: 'Cold',        pct: 20 };
+    if (celcius <= 22)  return { icon: '🌤️', label: 'Cool',        pct: 38 };
+    if (celcius <= 30)  return { icon: '☀️', label: 'Warm',        pct: 58 };
+    if (celcius <= 40)  return { icon: '🔆', label: 'Hot',         pct: 78 };
+    return                     { icon: '🔥', label: 'Scorching',   pct: 96 };
+  }
+
+  // ─── Unit selection ───────────────────────────────────────────────────────
+  unitBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      unitBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedUnit = btn.dataset.unit;
+      if (input.value.trim()) doConvert(true);
+    });
+  });
+
+  // ─── Real-time conversion ─────────────────────────────────────────────────
+  input.addEventListener('input', () => {
+    clearError();
+    if (input.value.trim() !== '') doConvert(false);
+    else { resultArea.classList.remove('show'); }
+  });
+
+  // ─── Convert button ───────────────────────────────────────────────────────
+  convertBtn.addEventListener('click', () => {
+    if (!validate()) return;
+
+    // Ripple + loader
+    convertBtn.classList.add('pulse', 'loading');
+    setTimeout(() => {
+      convertBtn.classList.remove('loading');
+      doConvert(true);
+    }, 600);
+    setTimeout(() => convertBtn.classList.remove('pulse'), 600);
+  });
+
+  // ─── Validate ─────────────────────────────────────────────────────────────
+  function validate() {
+    const v = input.value.trim();
+    if (v === '' || isNaN(Number(v))) {
+      showError();
+      return false;
+    }
+    return true;
+  }
+
+  function showError() {
+    input.classList.add('error');
+    errorMsg.classList.add('visible');
+  }
+  function clearError() {
+    input.classList.remove('error');
+    errorMsg.classList.remove('visible');
+  }
+
+  // ─── Core conversion display ──────────────────────────────────────────────
+  function doConvert(addHistory) {
+    const val = parseFloat(input.value);
+    if (isNaN(val)) return;
+
+    const results = toAll(val, selectedUnit);
+    const celsius = results['C'];
+    const meta = getTempMeta(celsius);
+
+    // Main result: show the first non-source unit
+    const toUnit = selectedUnit === 'C' ? 'F' : selectedUnit === 'F' ? 'C' : 'C';
+    const mainVal = results[toUnit];
+
+    resultValue.textContent = `${fmt(mainVal)}${unitLabel[toUnit]}`;
+    resultFrom.textContent  = `from ${fmt(val)}${unitLabel[selectedUnit]} (${unitName[selectedUnit]})`;
+
+    // All results
+    resultAll.innerHTML = ['C','F','K'].map(u =>
+      `<div class="result-mini">
+        <div class="mini-val">${fmt(results[u])}</div>
+        <div class="mini-unit">${unitLabel[u]}</div>
+      </div>`
+    ).join('');
+
+    // Thermometer
+    thermoFill.style.width = meta.pct + '%';
+    thermoLabel.textContent = meta.label;
+
+    // Icon
+    tempIcon.textContent = meta.icon;
+    tempIcon.style.transform = 'scale(1.3) rotate(-10deg)';
+    setTimeout(() => tempIcon.style.transform = '', 400);
+
+    // Show result
+    resultArea.classList.add('show');
+
+    // History (only on button click)
+    if (addHistory) {
+      const entry = {
+        from: `${fmt(val)}${unitLabel[selectedUnit]}`,
+        to:   `${fmt(mainVal)}${unitLabel[toUnit]}`,
+        time: new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })
+      };
+      history.unshift(entry);
+      if (history.length > 3) history.pop();
+      renderHistory();
+    }
+  }
+
+  // ─── History ──────────────────────────────────────────────────────────────
+  function renderHistory() {
+    if (history.length === 0) {
+      historyList.innerHTML = '<div class="empty-history">No conversions yet</div>';
+      return;
+    }
+    historyList.innerHTML = history.map((h, i) =>
+      `<div class="history-item" style="animation-delay:${i * 0.07}s">
+        <div class="history-from"><strong>${h.from}</strong></div>
+        <div class="history-arrow">→</div>
+        <div class="history-to">${h.to}</div>
+        <div class="history-time">${h.time}</div>
+      </div>`
+    ).join('');
+  }
+
+  // ─── Theme toggle ─────────────────────────────────────────────────────────
+  themeToggle.addEventListener('click', () => {
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    document.documentElement.setAttribute('data-theme', isLight ? 'dark' : 'light');
+    themeToggle.textContent = isLight ? '🌙' : '☀️';
+  });
+
+  // ─── Init ─────────────────────────────────────────────────────────────────
+  renderHistory();
+  input.focus();
+</script>
+</body>
+</html>
