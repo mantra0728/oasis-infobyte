@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daylyst — Daily Task Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1a2e;
+    --paper: #f5f0e8;
+    --cream: #ede8dc;
+    --accent: #c9663c;
+    --accent-soft: #e8c5b2;
+    --sage: #5a7a5e;
+    --sage-light: #c3d9c5;
+    --muted: #8a8070;
+    --border: #d4cec2;
+    --shadow: rgba(26,26,46,0.10);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    background-image:
+      radial-gradient(ellipse at 20% 10%, #e8d5c4 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 90%, #c9d8c5 0%, transparent 50%);
+  }
+
+  header {
+    padding: 40px 0 20px;
+    text-align: center;
+    position: relative;
+  }
+
+  header::after {
+    content: '';
+    display: block;
+    width: 60px;
+    height: 3px;
+    background: var(--accent);
+    margin: 16px auto 0;
+    border-radius: 2px;
+  }
+
+  .logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.8rem;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -1px;
+  }
+
+  .logo span { color: var(--accent); }
+
+  .tagline {
+    color: var(--muted);
+    font-size: 0.85rem;
+    font-weight: 300;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 0 24px 60px;
+  }
+
+  /* Add Task Card */
+  .add-card {
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+    margin: 32px 0 36px;
+    box-shadow: 0 4px 24px var(--shadow);
+    border: 1px solid var(--border);
+  }
+
+  .add-card h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    color: var(--ink);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .add-card h2::before {
+    content: '+';
+    width: 24px; height: 24px;
+    background: var(--accent);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    font-family: 'DM Sans', sans-serif;
+    flex-shrink: 0;
+  }
+
+  .input-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .task-input {
+    flex: 1;
+    min-width: 200px;
+    padding: 12px 16px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.95rem;
+    background: var(--paper);
+    color: var(--ink);
+    transition: border-color 0.2s;
+    outline: none;
+  }
+
+  .task-input:focus { border-color: var(--accent); }
+  .task-input::placeholder { color: var(--muted); }
+
+  .add-btn {
+    padding: 12px 24px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    white-space: nowrap;
+  }
+
+  .add-btn:hover { background: #b35a32; }
+  .add-btn:active { transform: scale(0.97); }
+
+  /* Section */
+  .section { margin-bottom: 36px; }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  .badge {
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  .badge-pending {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+
+  .badge-done {
+    background: var(--sage-light);
+    color: var(--sage);
+  }
+
+  .divider {
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* Task Item */
+  .task-list { display: flex; flex-direction: column; gap: 10px; }
+
+  .task-item {
+    background: white;
+    border-radius: 12px;
+    padding: 14px 16px;
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    transition: box-shadow 0.2s, transform 0.15s;
+    animation: slideIn 0.25s ease;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .task-item:hover {
+    box-shadow: 0 4px 16px var(--shadow);
+  }
+
+  .task-item.completed {
+    background: #fafaf8;
+    border-color: var(--sage-light);
+  }
+
+  /* Checkbox */
+  .check-btn {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    background: transparent;
+    cursor: pointer;
+    flex-shrink: 0;
+    margin-top: 1px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.2s, background 0.2s;
+  }
+
+  .check-btn:hover { border-color: var(--sage); }
+
+  .task-item.completed .check-btn {
+    background: var(--sage);
+    border-color: var(--sage);
+  }
+
+  .check-icon {
+    display: none;
+    width: 12px; height: 12px;
+  }
+
+  .task-item.completed .check-icon { display: block; }
+
+  .task-body { flex: 1; min-width: 0; }
+
+  .task-text {
+    font-size: 0.95rem;
+    color: var(--ink);
+    line-height: 1.4;
+    word-break: break-word;
+  }
+
+  .task-item.completed .task-text {
+    text-decoration: line-through;
+    color: var(--muted);
+  }
+
+  .task-meta {
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-top: 4px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .meta-label {
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* Edit input */
+  .edit-input {
+    width: 100%;
+    padding: 6px 10px;
+    border: 1.5px solid var(--accent);
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.95rem;
+    background: var(--paper);
+    color: var(--ink);
+    outline: none;
+    margin-top: 2px;
+  }
+
+  /* Action buttons */
+  .actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+  .action-btn {
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, border-color 0.15s;
+    color: var(--muted);
+  }
+
+  .action-btn:hover { background: var(--cream); color: var(--ink); }
+
+  .action-btn.delete:hover {
+    background: #fdecea;
+    border-color: #e57373;
+    color: #c0392b;
+  }
+
+  .action-btn.save:hover {
+    background: var(--sage-light);
+    border-color: var(--sage);
+    color: var(--sage);
+  }
+
+  /* Empty state */
+  .empty {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.88rem;
+    padding: 24px 0;
+    font-style: italic;
+  }
+
+  /* Stats bar */
+  .stats {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    margin: 0 0 32px;
+    flex-wrap: wrap;
+  }
+
+  .stat {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 20px;
+    text-align: center;
+    min-width: 100px;
+  }
+
+  .stat-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1;
+  }
+
+  .stat-label {
+    font-size: 0.7rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 4px;
+  }
+
+  svg { display: block; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Day<span>lyst</span></div>
+  <p class="tagline">Your daily task companion</p>
+</header>
+
+<div class="container">
+
+  <!-- Add Task -->
+  <div class="add-card">
+    <h2>New Task</h2>
+    <div class="input-row">
+      <input class="task-input" id="taskInput" type="text" placeholder="What do you need to do today?" maxlength="200">
+      <button class="add-btn" onclick="addTask()">Add Task</button>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats" id="stats"></div>
+
+  <!-- Pending -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-title">Pending Tasks</span>
+      <span class="badge badge-pending" id="pendingBadge">0</span>
+      <div class="divider"></div>
+    </div>
+    <div class="task-list" id="pendingList"></div>
+  </div>
+
+  <!-- Completed -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-title">Completed Tasks</span>
+      <span class="badge badge-done" id="doneBadge">0</span>
+      <div class="divider"></div>
+    </div>
+    <div class="task-list" id="doneList"></div>
+  </div>
+
+</div>
+
+<script>
+  let tasks = JSON.parse(localStorage.getItem('daylyst_tasks') || '[]');
+
+  function save() {
+    localStorage.setItem('daylyst_tasks', JSON.stringify(tasks));
+  }
+
+  function fmt(dateStr) {
+    const d = new Date(dateStr);
+    return d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  }
+
+  function addTask() {
+    const input = document.getElementById('taskInput');
+    const text = input.value.trim();
+    if (!text) { input.focus(); return; }
+    tasks.unshift({
+      id: Date.now(),
+      text,
+      completed: false,
+      addedAt: new Date().toISOString(),
+      completedAt: null,
+      editing: false
+    });
+    input.value = '';
+    save();
+    render();
+    input.focus();
+  }
+
+  function toggleComplete(id) {
+    const t = tasks.find(t => t.id === id);
+    if (!t) return;
+    t.completed = !t.completed;
+    t.completedAt = t.completed ? new Date().toISOString() : null;
+    save(); render();
+  }
+
+  function deleteTask(id) {
+    tasks = tasks.filter(t => t.id !== id);
+    save(); render();
+  }
+
+  function startEdit(id) {
+    tasks.forEach(t => t.editing = (t.id === id));
+    render();
+    setTimeout(() => {
+      const el = document.getElementById('edit_' + id);
+      if (el) { el.focus(); el.select(); }
+    }, 50);
+  }
+
+  function saveEdit(id) {
+    const el = document.getElementById('edit_' + id);
+    if (!el) return;
+    const val = el.value.trim();
+    if (val) {
+      const t = tasks.find(t => t.id === id);
+      if (t) { t.text = val; t.editing = false; }
+    }
+    save(); render();
+  }
+
+  function renderTask(t) {
+    const div = document.createElement('div');
+    div.className = 'task-item' + (t.completed ? ' completed' : '');
+
+    // Check button
+    const check = document.createElement('button');
+    check.className = 'check-btn';
+    check.title = t.completed ? 'Mark pending' : 'Mark complete';
+    check.innerHTML = `<svg class="check-icon" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <polyline points="2,6 5,9.5 10,3" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`;
+    check.onclick = () => toggleComplete(t.id);
+    div.appendChild(check);
+
+    // Body
+    const body = document.createElement('div');
+    body.className = 'task-body';
+
+    if (t.editing) {
+      const inp = document.createElement('input');
+      inp.className = 'edit-input';
+      inp.id = 'edit_' + t.id;
+      inp.value = t.text;
+      inp.onkeydown = (e) => {
+        if (e.key === 'Enter') saveEdit(t.id);
+        if (e.key === 'Escape') { t.editing = false; render(); }
+      };
+      body.appendChild(inp);
+    } else {
+      const txt = document.createElement('div');
+      txt.className = 'task-text';
+      txt.textContent = t.text;
+      body.appendChild(txt);
+    }
+
+    const meta = document.createElement('div');
+    meta.className = 'task-meta';
+    meta.innerHTML = `<span><span class="meta-label">Added</span> ${fmt(t.addedAt)}</span>` +
+      (t.completedAt ? `<span><span class="meta-label">Done</span> ${fmt(t.completedAt)}</span>` : '');
+    body.appendChild(meta);
+    div.appendChild(body);
+
+    // Actions
+    const actions = document.createElement('div');
+    actions.className = 'actions';
+
+    if (t.editing) {
+      const saveBtn = document.createElement('button');
+      saveBtn.className = 'action-btn save';
+      saveBtn.title = 'Save';
+      saveBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><polyline points="2,7 5.5,10.5 12,3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+      saveBtn.onclick = () => saveEdit(t.id);
+      actions.appendChild(saveBtn);
+    } else {
+      const editBtn = document.createElement('button');
+      editBtn.className = 'action-btn';
+      editBtn.title = 'Edit';
+      editBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9.5 2.5l2 2L4 12H2v-2L9.5 2.5z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+      editBtn.onclick = () => startEdit(t.id);
+      actions.appendChild(editBtn);
+    }
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'action-btn delete';
+    delBtn.title = 'Delete';
+    delBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><line x1="2" y1="2" x2="12" y2="12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><line x1="12" y1="2" x2="2" y2="12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+    delBtn.onclick = () => deleteTask(t.id);
+    actions.appendChild(delBtn);
+
+    div.appendChild(actions);
+    return div;
+  }
+
+  function render() {
+    const pending = tasks.filter(t => !t.completed);
+    const done = tasks.filter(t => t.completed);
+
+    document.getElementById('pendingBadge').textContent = pending.length;
+    document.getElementById('doneBadge').textContent = done.length;
+
+    // Stats
+    const pct = tasks.length ? Math.round((done.length / tasks.length) * 100) : 0;
+    document.getElementById('stats').innerHTML = `
+      <div class="stat"><div class="stat-num">${tasks.length}</div><div class="stat-label">Total</div></div>
+      <div class="stat"><div class="stat-num" style="color:var(--accent)">${pending.length}</div><div class="stat-label">Pending</div></div>
+      <div class="stat"><div class="stat-num" style="color:var(--sage)">${done.length}</div><div class="stat-label">Done</div></div>
+      <div class="stat"><div class="stat-num">${pct}%</div><div class="stat-label">Complete</div></div>
+    `;
+
+    // Pending list
+    const pList = document.getElementById('pendingList');
+    pList.innerHTML = '';
+    if (pending.length === 0) {
+      pList.innerHTML = '<div class="empty">No pending tasks — enjoy your free time! ✨</div>';
+    } else {
+      pending.forEach(t => pList.appendChild(renderTask(t)));
+    }
+
+    // Done list
+    const dList = document.getElementById('doneList');
+    dList.innerHTML = '';
+    if (done.length === 0) {
+      dList.innerHTML = '<div class="empty">Completed tasks will appear here.</div>';
+    } else {
+      done.forEach(t => dList.appendChild(renderTask(t)));
+    }
+  }
+
+  // Enter key to add
+  document.getElementById('taskInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') addTask();
+  });
+
+  render();
+</script>
+</body>
+</html>
